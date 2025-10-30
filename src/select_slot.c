@@ -9,6 +9,7 @@
 #include "screen.h"
 #include "input.h"
 #include "system.h"
+#include "conio.h"
 
 char mode=0;
 
@@ -127,6 +128,10 @@ void select_slot_done()
 
     fuji_read_directory(255-(unsigned char)strlen(path), 0, response);
     strcat(filename, response);
+
+    gotoxy(0,0);
+    cprintf("mode: %d host: %d dev: %d", 0, 4, 2);
+    die();
 
     fuji_set_device_filename(mode, selected_host_slot, selected_device_slot, filename);
 
