@@ -27,6 +27,13 @@ extern void cold_start(void);
 extern void rtclr(void);
 #endif /* BUILD_ATARI */
 
+#ifdef BUILD_MSXROM
+/* IO_CONTROL mode bytes for the fujiversal adapter (msx_proto_260402). */
+#define MSX_MODE_UNAPI_ROM   0x3D  /* UNAPI in subslot 0, the loaded ROM in subslot 1 */
+#define MSX_MODE_UNAPI_BASIC 0x1C  /* UNAPI alone: the machine comes up in BASIC */
+extern void system_boot_mode(uint8_t mode);
+#endif /* BUILD_MSXROM */
+
 #ifdef BUILD_MSDOS
 #include <stdint.h>
 

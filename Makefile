@@ -201,18 +201,36 @@ msdos-exp::
 # fuji_bus_call to use varargs"): sccz80 mis-passes the arguments, so the
 # header leaves the MSX corrupted - device 0x70 arrives as 0x10 and command
 # 0xEA as 0xC4 - and the firmware never answers, so CONFIG sits on the splash
-# spinning on IO_STATUS. Pin to the last commit known to talk to the firmware.
-# When that is fixed upstream, drop this and fold msxrom back into msdos-exp.
-# The pin has to live here because $(CACHE_DIR) is gitignored, so a checkout
+# spinning on IO_STATUS. The `unapi` branch is where that is fixed: it carries
+# a FujiNetParams with named aux1..aux4 members, so nothing is passed varargs.
+#
+# That branch also moves the transport behind a seam, fuji_unapi_call(), whose
+# EXTBIO back end finds an MSX-UNAPI implementation and enters it with an
+# inter-slot call. The adapter keeps one resident in subslot 0 of its own slot,
+# beside CONFIG in subslot 1, so CONFIG is an ordinary client of it and
+# carries no transport of its own.
+#
+# The ref has to live here because $(CACHE_DIR) is gitignored, so a checkout
 # made by hand in the cache would silently revert to main the next time the
-# cache is cleared.
-MSXROM_FNLIB_REV = b0a7959
-MSXROM_FNLIB_CACHE = $(CACHE_DIR)/fujinet-lib-msx-$(MSXROM_FNLIB_REV)
+# cache is cleared. Override MSXROM_FNLIB to build against a checkout you
+# already have:
+#   make msxrom-exp MSXROM_FNLIB=$$HOME/fujinet/fujinet-lib-unapi
+MSXROM_FNLIB_REV = unapi
+MSXROM_FNLIB ?= $(CACHE_DIR)/fujinet-lib-msx-$(MSXROM_FNLIB_REV)
 
+# The ref is resolved to a commit before checkout, and the clone is moved into
+# place only once that has worked: a bare branch name is only a remote-tracking
+# ref in a fresh clone, which "checkout --detach" refuses, and a directory left
+# by a half-finished clone would satisfy the -d test on the next run and
+# quietly build against whatever branch the clone happened to leave checked out.
 msxrom-exp::
-	@if [ ! -d $(MSXROM_FNLIB_CACHE) ]; then \
-	  git clone $(FUJINET_LIB_EXP_REPO) $(MSXROM_FNLIB_CACHE) && \
-	  git -C $(MSXROM_FNLIB_CACHE) checkout --detach $(MSXROM_FNLIB_REV); \
+	@if [ ! -d $(MSXROM_FNLIB) ]; then \
+	  rm -rf $(MSXROM_FNLIB).tmp && \
+	  git clone $(FUJINET_LIB_EXP_REPO) $(MSXROM_FNLIB).tmp && \
+	  git -C $(MSXROM_FNLIB).tmp checkout --detach \
+	    $$(git -C $(MSXROM_FNLIB).tmp rev-parse --verify --quiet '$(MSXROM_FNLIB_REV)^{commit}' \
+	       || git -C $(MSXROM_FNLIB).tmp rev-parse --verify 'origin/$(MSXROM_FNLIB_REV)^{commit}') && \
+	  mv $(MSXROM_FNLIB).tmp $(MSXROM_FNLIB); \
 	fi
-	$(MAKE) -C $(MSXROM_FNLIB_CACHE) msx/r2r
-	$(MAKE) FUJINET_LIB=$(abspath $(MSXROM_FNLIB_CACHE)) PLATFORMS=msxrom msxrom
+	$(MAKE) -C $(MSXROM_FNLIB) msx/r2r
+	$(MAKE) FUJINET_LIB=$(abspath $(MSXROM_FNLIB)) PLATFORMS=msxrom msxrom
