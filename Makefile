@@ -67,6 +67,12 @@ ifneq ($(filter h89-cpm h89-hdos,$(PLATFORM)),)
   FUJINET_LIB = $(FUJINET_LIB_H89)
 endif
 
+# Needs fuji_set_cart_mode(), which is in no fujinet-lib release yet.
+FUJINET_LIB_MSXROM ?= https://github.com/nwah/fujinet-lib.git\#feat/msx-subslot-unapi
+ifneq ($(filter msxrom,$(PLATFORM)),)
+  FUJINET_LIB = $(FUJINET_LIB_MSXROM)
+endif
+
 # Define extra dirs ("combos") that expand with a platform.
 # Format: platform+=combo1,combo2
 PLATFORM_COMBOS = \
